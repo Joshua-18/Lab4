@@ -47,7 +47,6 @@ END;
 --/
 
 --#4
-
 DROP TABLE Treatment;
 DROP TABLE Procedure;
 DROP TABLE Physician;
@@ -107,7 +106,8 @@ insert into Patient
          53711, 420, 4);
 insert into Patient
   values(8659, 'Hernandez, Juan', '8300 Geneva Dr.', 'Austin', 'TX',
-         78723, 350, 2);	
+         78723, 350, 2);
+COMMIT;
 /
 insert into Physician
   values(101, 'Wilcox, Chris', '512-329-1848', 'Eyes, Ears, Throat');
@@ -119,6 +119,7 @@ insert into Physician
   values(104,	'Li, Jan', '512-516-3948', 'Cardiovascular');
 insert into Physician
   values(105,	'Simmons, Alex', '512-442-5700', 'Hemotology');
+COMMIT;
 /
 insert into Procedure
   values('13-08', 'Throat culture', 15.00);
@@ -130,6 +131,7 @@ insert into Procedure
   values('60-00', 'Blood Analysis', 58.00);
 insert into Procedure
   values('88-20', 'MRI', 800.00);
+COMMIT;
 /
 insert into Treatment
   values(3249, 101, '13-08', '12-FEB-1999');
@@ -151,6 +153,7 @@ insert into Treatment
   values(3249, 103, '88-20', '24-JAN-2000');
 insert into Treatment
   values(8659, 104, '60-00', '08-APR-2001');
+COMMIT;
 /
 SELECT *
 FROM Patient;
