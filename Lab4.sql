@@ -37,15 +37,7 @@ CUST_ORDER(90009, 90010);
 CUST_ORDER(90005, 90004);
 END;
 /
---#2 do second bullet
---CREATE TABLE t_patTrt(
---t_patient   NUMBER(4),
---t_treatment VARCHAR2(5),
---t_phys_id   NUMBER(3),
---t_phys_name VARCHAR2(20),
---t_phys_spec VARCHAR2(20));
---/
-
+-- problem 4 needs to be done before moving to problems 2 and 3
 --#4
 DROP TABLE Treatment;
 DROP TABLE Procedure;
@@ -163,6 +155,175 @@ SELECT *
 FROM Procedure;
 SELECT *
 FROM Treatment;
+/
+--#2
+-- t_patTrt table
+DROP TABLE t_patTrt;
+CREATE TABLE t_patTrt(
+patnbr NUMBER(4),
+phys_proc VARCHAR2(5),
+physid NUMBER(3),
+phys_name VARCHAR2(20),
+phys_spec VARCHAR2(20));
+/
+-- package specification
+CREATE OR REPLACE PACKAGE Hospital IS
+  TYPE type_tbl IS record(
+    rv_pat       Treatment.Pat_Nbr%TYPE,
+    rv_treat     Treatment.Trt_Procedure%TYPE,
+    rv_physid    Treatment.Phys_ID%TYPE,
+    rv_phys_name Physician.Phys_Name%TYPE,
+    rv_phys_sp   Physician.Phys_Specialty%TYPE);
+  TYPE type_t_patTrt IS TABLE OF type_tbl
+    INDEX BY binary_integer;
+    PROCEDURE BuildPatTbl
+        (p_rows IN OUT NUMBER);
+    FUNCTION FindPatient
+        (f_name IN patient.pat_name%TYPE)
+     RETURN boolean;
+    FUNCTION FindPatient
+        (f_numbr IN patient.pat_nbr%TYPE)
+     RETURN boolean;
+    PROCEDURE NewPhys
+    (p_id     IN physician.Phys_ID%TYPE,
+     p_name   IN physician.Phys_Name%TYPE,
+     p_phone  IN physician.Phys_Phone%TYPE,
+     p_spec   IN physician.Phys_Specialty%TYPE);
+END Hospital;
+/
+--package body
+CREATE OR REPLACE PACKAGE BODY Hospital 
+IS  
+PROCEDURE BuildPatTbl
+  (p_rows IN OUT NUMBER)
+ IS  
+  cursor cur_table IS 
+    SELECT tr.Pat_Nbr, tr.Trt_Procedure, Phys_ID,
+                    py.Phys_Name, py.Phys_Specialty
+     FROM Treatment tr JOIN  Physician py USING (Phys_ID);
+  
+ BEGIN
+  p_rows := 0;
+  FOR rec_table IN cur_table LOOP
+   INSERT INTO t_patTrt
+     values (rec_table.Pat_Nbr, rec_table.Trt_Procedure, rec_table.Phys_ID,
+             rec_table.Phys_Name, rec_table.Phys_Specialty);
+   p_rows := p_rows + 1;
+  END LOOP;
+  
+END BuildPatTbl;
+
+-- overloaded functions
+FUNCTION FindPatient
+  (f_name IN patient.pat_name%TYPE)
+  RETURN boolean
+  IS
+ pat_found boolean := FALSE;
+ cursor cur_table IS
+  SELECT Pat_Name 
+  FROM patient;
+  
+BEGIN
+  FOR rec_table IN cur_table LOOP
+    IF f_name = rec_table.Pat_Name THEN
+      pat_found := TRUE;
+    END IF;
+  END LOOP;
+  RETURN pat_found;
+END FindPatient; 
+--OVERLOADED 
+FUNCTION FindPatient
+  (f_numbr in patient.pat_nbr%TYPE)
+  RETURN boolean
+  IS
+ pat_found boolean := FALSE;
+ cursor cur_table IS
+  SELECT Pat_Nbr 
+  FROM patient;
+  
+BEGIN
+  FOR rec_table IN cur_table LOOP
+    IF f_numbr = rec_table.Pat_Nbr THEN
+      pat_found := TRUE;
+    END IF;
+  END LOOP;
+  RETURN pat_found;
+END FindPatient;
+
+PROCEDURE NewPhys
+    (p_id     IN physician.Phys_ID%TYPE,
+     p_name   IN physician.Phys_Name%TYPE,
+     p_phone  IN physician.Phys_Phone%TYPE,
+     p_spec   IN physician.Phys_Specialty%TYPE)
+  IS
+   cursor cur_table IS
+     SELECT Phys_ID FROM Physician;
+  e_DupPhysFound EXCEPTION;
+    
+BEGIN
+    FOR rec_table IN cur_table LOOP
+   IF p_id = rec_table.phys_id THEN
+    RAISE e_DupPhysFound;
+   END IF;
+  END LOOP;
+  INSERT INTO Physician
+    VALUES(p_id, p_name, p_phone, p_spec);
+
+  EXCEPTION
+   WHEN e_DupPhysFound THEN
+    dbms_output.put_line('Physician already exists.');
+
+ End NewPhys;
+END Hospital;
+/
+--#3
+DECLARE
+ pat_found boolean; 
+ 
+BEGIN
+  -- this section tests the FindPatient function
+ pat_found := Hospital.FindPatient(1379);
+ dbms_output.put('Patient id: 1379 was ');
+ IF pat_found = TRUE THEN
+   dbms_output.put_line('found!');
+ ELSE
+   dbms_output.put_line('not found!');
+ END IF;
+ 
+ pat_found := Hospital.FindPatient('Smith, Chris');
+ dbms_output.put('Patient Name: Smith, Chris was ');
+ IF pat_found = TRUE THEN
+   dbms_output.put_line('found!');
+ ELSE
+   dbms_output.put_line('not found!');
+ END IF;
+ 
+ pat_found := Hospital.FindPatient(0000);
+ dbms_output.put('Patient id: 0000 was ');
+ IF pat_found = TRUE THEN
+   dbms_output.put_line('found!');
+ ELSE
+   dbms_output.put_line('not found!');
+ END IF;
+END;
+/
+BEGIN
+    Hospital.NewPhys(106, 'Membreno, Joshua','512-123-4567','the good doctor');
+    Hospital.NewPhys(102,'Nusca, Jane','512-516-3947','Cardiovascular');
+END;
+/
+SELECT * 
+FROM Physician 
+WHERE Phys_ID = 106;
+/
+DECLARE
+ rows_processed NUMBER(3);
+BEGIN
+ Hospital.BuildPatTbl(rows_processed);
+END;
+/
+SELECT * 
+FROM t_patTrt;
 /
 --#5
 CREATE OR REPLACE TRIGGER treatment_updt
