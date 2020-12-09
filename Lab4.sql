@@ -281,7 +281,7 @@ DECLARE
  pat_found boolean; 
  
 BEGIN
-  -- this section tests the FindPatient function
+
  pat_found := Hospital.FindPatient(1379);
  dbms_output.put('Patient id: 1379 was ');
  IF pat_found = TRUE THEN
