@@ -352,7 +352,7 @@ WHERE pat_nbr = 4500;
 --#6
 DROP TABLE Trt_Stats;
 CREATE TABLE Trt_Stats(
-Trt_Procedure VARCHAR2(4) PRIMARY KEY, 
+Trt_Procedure VARCHAR2(5), 
 Trt_INS_Count NUMBER(3),
 Trt_DEL_Count NUMBER(3),
 Trt_UPD_Count NUMBER(3));
@@ -390,4 +390,28 @@ IF DELETING THEN
 	END IF;
   END IF;
 END trig_Stats;
+/
+INSERT INTO Treatment
+        VALUES(1379,104,'60-00','17-NOV-20');
+INSERT INTO Treatment
+        VALUES(1379,101,'27-45','12-SEP-20');
+INSERT INTO Treatment
+        VALUES(1379,103,'13-08','06-NOV-20');
+
+DELETE FROM Treatment WHERE pat_nbr = 1379 
+    AND phys_id = 104 AND trt_procedure = '60-00' AND trt_date = '17-NOV-20';
+DELETE FROM Treatment WHERE pat_nbr = 5872 
+    AND phys_id = 105 AND trt_procedure = '60-00' ;
+DELETE FROM treatment WHERE pat_nbr = 5116 and 
+        phys_id = '104' and trt_procedure = '52-14';
+
+UPDATE Treatment
+SET trt_procedure = '52-14'
+WHERE pat_nbr = 1379 AND phys_id = '101' AND trt_procedure = '27-45';
+DELETE FROM Treatment WHERE pat_nbr = 1379 
+    AND phys_id = 101 AND trt_procedure = '52-14' ;
+COMMIT;
+/
+SELECT *
+FROM Trt_Stats;
 /

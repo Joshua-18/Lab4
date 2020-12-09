@@ -541,10 +541,6 @@ SQL> SELECT *
        106 Membreno, Joshua     512-123-4567 the good doctor     
 
 SQL> /
-SQL> SELECT *
-  2  FROM t_patTrt;
-no rows selected
-SQL> /
 SQL> DECLARE
   2   rows_processed NUMBER(3);
   3  BEGIN
@@ -600,7 +596,7 @@ SQL> INSERT INTO Treatment
 SQL> INSERT INTO Treatment
   2          VALUES(4500,103,'13-08','01-JUN-20');
 
-Error starting at line : 349 File @ C:\Users\Joshua\Documents\itse1345\competency_4\Lab4\Lab4\Lab4.sql
+Error starting at line : 346 File @ C:\Users\Joshua\Documents\itse1345\competency_4\Lab4\Lab4\Lab4.sql
 In command -
 INSERT INTO Treatment
         VALUES(4500,103,'13-08','01-JUN-20')
@@ -617,6 +613,123 @@ SQL> SELECT *
 ---------- ---------- ----- ---------
       4500        101 13-08 04-FEB-99
       4500        102 13-08 07-DEC-20
+
+SQL> /
+SQL> --#6
+SQL> DROP TABLE Trt_Stats;
+
+Table TRT_STATS dropped.
+
+SQL> CREATE TABLE Trt_Stats(
+  2  Trt_Procedure VARCHAR2(5), 
+  3  Trt_INS_Count NUMBER(3),
+  4  Trt_DEL_Count NUMBER(3),
+  5  Trt_UPD_Count NUMBER(3));
+
+Table TRT_STATS created.
+
+SQL> DESCRIBE Trt_Stats
+Name          Null? Type        
+------------- ----- ----------- 
+TRT_PROCEDURE       VARCHAR2(5) 
+TRT_INS_COUNT       NUMBER(3)   
+TRT_DEL_COUNT       NUMBER(3)   
+TRT_UPD_COUNT       NUMBER(3)   
+SQL> /
+SQL> CREATE OR REPLACE TRIGGER trig_Stats
+  2  	BEFORE INSERT OR UPDATE OR DELETE ON Treatment
+  3  	FOR EACH ROW
+  4  BEGIN
+  5  IF INSERTING THEN
+  6  	UPDATE trt_Stats
+  7  	SET Trt_INS_Count = Trt_INS_Count + 1
+  8  	WHERE :OLD.Trt_Procedure = :NEW.Trt_Procedure;
+  9          IF SQL%NOTFOUND THEN
+ 10  		INSERT INTO trt_Stats (Trt_Procedure, Trt_INS_Count)
+ 11  		VALUES (:NEW.Trt_Procedure, 1);
+ 12  	END IF;
+ 13  END IF;
+ 14    IF UPDATING THEN
+ 15  	UPDATE trt_Stats
+ 16  	SET Trt_UPD_Count = Trt_UPD_Count + 1
+ 17  	WHERE :OLD.Trt_Procedure = :NEW.Trt_Procedure;
+ 18          IF SQL%NOTFOUND THEN
+ 19  		INSERT INTO trt_Stats (Trt_Procedure, Trt_UPD_Count)
+ 20  		VALUES (:NEW.Trt_Procedure, 1);	
+ 21  	END IF;
+ 22    END IF;
+ 23  IF DELETING THEN
+ 24  	UPDATE trt_Stats
+ 25  	SET Trt_DEL_Count = Trt_DEL_Count + 1
+ 26  	WHERE Trt_Procedure = :OLD.Trt_Procedure;
+ 27          IF SQL%NOTFOUND THEN
+ 28  	  INSERT INTO trt_Stats (Trt_Procedure, Trt_DEL_Count)
+ 29  	  VALUES (:OLD.Trt_Procedure, 1);
+ 30  	END IF;
+ 31    END IF;
+ 32  END trig_Stats;
+ 33  /
+
+Trigger TRIG_STATS compiled
+
+SQL> INSERT INTO Treatment
+  2          VALUES(1379,104,'60-00','17-NOV-20');
+
+1 row inserted.
+
+SQL> INSERT INTO Treatment
+  2          VALUES(1379,101,'27-45','12-SEP-20');
+
+1 row inserted.
+
+SQL> INSERT INTO Treatment
+  2          VALUES(1379,103,'13-08','06-NOV-20');
+
+1 row inserted.
+
+SQL> 
+SQL> DELETE FROM Treatment WHERE pat_nbr = 1379 
+  2      AND phys_id = 104 AND trt_procedure = '60-00' AND trt_date = '17-NOV-20';
+
+1 row deleted.
+
+SQL> DELETE FROM Treatment WHERE pat_nbr = 5872 
+  2      AND phys_id = 105 AND trt_procedure = '60-00' ;
+
+1 row deleted.
+
+SQL> DELETE FROM treatment WHERE pat_nbr = 5116 and 
+  2          phys_id = '104' and trt_procedure = '52-14';
+
+2 rows deleted.
+
+SQL> 
+SQL> UPDATE Treatment
+  2  SET trt_procedure = '52-14'
+  3  WHERE pat_nbr = 1379 AND phys_id = '101' AND trt_procedure = '27-45';
+
+1 row updated.
+
+SQL> DELETE FROM Treatment WHERE pat_nbr = 1379 
+  2      AND phys_id = 101 AND trt_procedure = '52-14' ;
+
+1 row deleted.
+
+SQL> COMMIT;
+
+Commit complete.
+
+SQL> /
+SQL> SELECT *
+  2  FROM Trt_Stats;
+
+TRT_P TRT_INS_COUNT TRT_DEL_COUNT TRT_UPD_COUNT
+----- ------------- ------------- -------------
+60-00             1                            
+27-45             1                            
+13-08             1                            
+52-14                           3              
+52-14                                         1
 
 SQL> /
 SQL> spool off
