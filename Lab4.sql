@@ -349,3 +349,45 @@ SELECT *
 FROM Treatment
 WHERE pat_nbr = 4500;
 /
+--#6
+DROP TABLE Trt_Stats;
+CREATE TABLE Trt_Stats(
+Trt_Procedure VARCHAR2(4) PRIMARY KEY, 
+Trt_INS_Count NUMBER(3),
+Trt_DEL_Count NUMBER(3),
+Trt_UPD_Count NUMBER(3));
+DESCRIBE Trt_Stats
+/
+CREATE OR REPLACE TRIGGER trig_Stats
+	BEFORE INSERT OR UPDATE OR DELETE ON Treatment
+	FOR EACH ROW
+BEGIN
+IF INSERTING THEN
+	UPDATE trt_Stats
+	SET Trt_INS_Count = Trt_INS_Count + 1
+	WHERE :OLD.Trt_Procedure = :NEW.Trt_Procedure;
+        IF SQL%NOTFOUND THEN
+		INSERT INTO trt_Stats (Trt_Procedure, Trt_INS_Count)
+		VALUES (:NEW.Trt_Procedure, 1);
+	END IF;
+END IF;
+  IF UPDATING THEN
+	UPDATE trt_Stats
+	SET Trt_UPD_Count = Trt_UPD_Count + 1
+	WHERE :OLD.Trt_Procedure = :NEW.Trt_Procedure;
+        IF SQL%NOTFOUND THEN
+		INSERT INTO trt_Stats (Trt_Procedure, Trt_UPD_Count)
+		VALUES (:NEW.Trt_Procedure, 1);	
+	END IF;
+  END IF;
+IF DELETING THEN
+	UPDATE trt_Stats
+	SET Trt_DEL_Count = Trt_DEL_Count + 1
+	WHERE Trt_Procedure = :OLD.Trt_Procedure;
+        IF SQL%NOTFOUND THEN
+	  INSERT INTO trt_Stats (Trt_Procedure, Trt_DEL_Count)
+	  VALUES (:OLD.Trt_Procedure, 1);
+	END IF;
+  END IF;
+END trig_Stats;
+/
